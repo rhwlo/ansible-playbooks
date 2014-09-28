@@ -1,0 +1,4 @@
+dummy_host.example.com
+
+[mailservers]
+dummy_host.example.com
