@@ -6,82 +6,182 @@
       yum: name=dovecot state=present
       notify:
         - restart dovecot
+      tags:
+        - dovecot
 
     - name: dovecot main config
       copy: dest=/etc/dovecot/dovecot.conf src=files/dovecot.conf
       notify:
         - restart dovecot
+      tags:
+        - dovecot
 
     - name: dovecot authentication config
       copy: dest=/etc/dovecot/conf.d/10-auth.conf src=files/dovecot-10-auth.conf
       notify:
         - restart dovecot
+      tags:
+        - dovecot
 
     - name: dovecot mail location config
       copy: dest=/etc/dovecot/conf.d/10-mail.conf src=files/dovecot-10-mail.conf
       notify:
         - restart dovecot
+      tags:
+        - dovecot
 
     - name: dovecot smtp auth
       copy: dest=/etc/dovecot/conf.d/10-master.conf src=files/dovecot-10-master.conf
       notify:
         - restart dovecot
+      tags:
+        - dovecot
 
     - name: verify that dovecot is enabled
       service: name=dovecot enabled=true
       notify:
         - restart dovecot
+      tags:
+        - dovecot
 
     # postfix
     - name: install postfix
       yum: name=postfix state=present
       notify:
         - restart postfix
+      tags:
+        - postfix
 
     - name: verify that sendmail is removed
       yum: name=sendmail state=absent
+      tags:
+        - postfix
 
     - name: postfix main config
       template: dest=/etc/postfix/main.cf src=files/postfix-main.cf.j2
       notify:
         - restart postfix
+      tags:
+        - postfix
 
     - name: postfix master config
       copy: dest=/etc/postfix/master.cf src=files/postfix-master.cf
       notify:
         - restart postfix
+      tags:
+        - postfix
 
     - name: set up aliases
       copy: dest=/etc/aliases src=files/mail-aliases
       notify:
         - generate aliases
+      tags:
+        - postfix
 
     - name: verify that postfix is enabled
       service: name=postfix enabled=true
+      tags:
+        - postfix
 
     # spamassassin
     - name: install spamassassin
       yum: name=spamassassin state=present
       notify:
         - restart spamassassin
+      tags:
+        - spamassassin
 
     - name: copy spamassassin local.cf
       copy: dest=/etc/mail/spamassassin/local.cf src=files/spamassassin-local.cf
       notify:
         - restart postfix
         - restart spamassassin
+      tags:
+        - spamassassin
 
     - name: create cronjob for spamassassin
       cron: hour="10" job="sa-update && service spamassassin reload"
+      tags:
+        - spamassassin
 
     - name: create spamd group
       group: name=spamd state=present
+      tags:
+        - spamassassin
 
     - name: create spamd user
       user: name=spamd state=present shell=/bin/false group=spamd
+      tags:
+        - spamassassin
 
     - name: verify that spamassassin is enabled
       service: name=spamassassin enabled=true
+      tags:
+        - spamassassin
+
+    # DKIM
+    - name: install opendkim
+      yum: name=opendkim state=present
+      notify:
+        - restart opendkim
+      tags:
+        - opendkim
+
+    - name: copy opendkim config
+      copy: dest=etc/opendkim.conf src=files/opendkim.conf
+      notify:
+        - restart opendkim
+      tags:
+        - opendkim
+
+    - name: make opendkim keys directory
+      file: path=/etc/opendkim/keys/{{domain}} state=directory owner=opendkim group=opendkim
+      tags:
+        - opendkim
+
+    - name: generate public/private dkim keys
+      command: "opendkim-genkey -D /etc/opendkim/keys/{{domain}}/ -d {{domain}} -s default" creates="/etc/opendkim/keys/{{domain}}/default.private"
+      notify:
+        - restart opendkim
+      tags:
+        - opendkim
+
+    - name: symlink default -> default.private
+      file: path=/etc/opendkim/keys/{{domain}}/default src=/etc/opendkim/{{domain}}/default.private state=link
+      tags:
+        - opendkim
+
+    - name: verify ownership of opendkim keys directory
+      file: path=/etc/opendkim/keys/{{domain}} recurse=yes owner=opendkim group=opendkim
+      tags:
+        - opendkim
+
+    - name: verify opendkim KeyTable
+      template: dest=/etc/opendkim/KeyTable src=templates/opendkim-KeyTable
+      notify:
+        - restart opendkim
+      tags:
+        - opendkim
+
+    - name: verify opendkim SigningTable
+      template: dest=/etc/opendkim/SigningTable src=templates/opendkim-SigningTable
+      notify:
+        - restart opendkim
+      tags:
+        - opendkim
+
+    - name: update opendkim TrustedHosts
+      template: dest=/etc/opendkim/TrustedHosts src=templates/opendkim-TrustedHosts
+      notify:
+        - restart opendkim
+      tags:
+        - opendkim
+
+    - name: verify opendkim is enabled
+      service: name=opendkim enabled=true
+      tags:
+        - opendkim
+
 
   handlers:
     - name: generate aliases
@@ -89,6 +189,9 @@
 
     - name: restart dovecot
       service: name=dovecot state=restarted
+
+    - name: restart opendkim
+      service: name=opendkim state=restarted
 
     - name: restart postfix
       service: name=postfix state=restarted
