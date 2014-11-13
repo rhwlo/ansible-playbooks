@@ -58,7 +58,7 @@
         - postfix
 
     - name: postfix main config
-      template: dest=/etc/postfix/main.cf src=files/postfix-main.cf.j2
+      template: dest=/etc/postfix/main.cf src=templates/postfix-main.cf.j2
       notify:
         - restart postfix
       tags:
@@ -68,6 +68,15 @@
       copy: dest=/etc/postfix/master.cf src=files/postfix-master.cf
       notify:
         - restart postfix
+      tags:
+        - postfix
+
+    - name: copy postfix virtual.db
+      template: dest=/etc/postfix/virtual src=templates/postfix-virtual.j2
+      notify:
+        - restart postfix
+        - run postmap
+        - generate aliases
       tags:
         - postfix
 
@@ -100,7 +109,7 @@
         - spamassassin
 
     - name: create cronjob for spamassassin
-      cron: hour="10" job="sa-update && service spamassassin reload"
+      cron: name=sa-update hour="10" job="sa-update && service spamassassin reload"
       tags:
         - spamassassin
 
@@ -128,7 +137,7 @@
         - opendkim
 
     - name: copy opendkim config
-      copy: dest=etc/opendkim.conf src=files/opendkim.conf
+      copy: dest=/etc/opendkim.conf src=files/opendkim.conf
       notify:
         - restart opendkim
       tags:
@@ -140,14 +149,16 @@
         - opendkim
 
     - name: generate public/private dkim keys
-      command: "opendkim-genkey -D /etc/opendkim/keys/{{domain}}/ -d {{domain}} -s default" creates="/etc/opendkim/keys/{{domain}}/default.private"
+      command: opendkim-genkey -D /etc/opendkim/keys/{{domain}}/ -d {{domain}} -s default
+      args:
+        creates: /etc/opendkim/keys/{{domain}}/default.private
       notify:
         - restart opendkim
       tags:
         - opendkim
 
     - name: symlink default -> default.private
-      file: path=/etc/opendkim/keys/{{domain}}/default src=/etc/opendkim/{{domain}}/default.private state=link
+      file: path=/etc/opendkim/keys/{{domain}}/default src=/etc/opendkim/keys/{{domain}}/default.private state=link
       tags:
         - opendkim
 
@@ -156,31 +167,31 @@
       tags:
         - opendkim
 
-    - name: verify opendkim KeyTable
-      template: dest=/etc/opendkim/KeyTable src=templates/opendkim-KeyTable
-      notify:
-        - restart opendkim
-      tags:
-        - opendkim
-
-    - name: verify opendkim SigningTable
-      template: dest=/etc/opendkim/SigningTable src=templates/opendkim-SigningTable
-      notify:
-        - restart opendkim
-      tags:
-        - opendkim
-
-    - name: update opendkim TrustedHosts
-      template: dest=/etc/opendkim/TrustedHosts src=templates/opendkim-TrustedHosts
-      notify:
-        - restart opendkim
-      tags:
-        - opendkim
-
-    - name: verify opendkim is enabled
-      service: name=opendkim enabled=true
-      tags:
-        - opendkim
+  #    - name: verify opendkim KeyTable
+  #      template: dest=/etc/opendkim/KeyTable src=templates/opendkim-KeyTable
+  #      notify:
+  #        - restart opendkim
+  #      tags:
+  #        - opendkim
+  #
+  #    - name: verify opendkim SigningTable
+  #      template: dest=/etc/opendkim/SigningTable src=templates/opendkim-SigningTable
+  #      notify:
+  #        - restart opendkim
+  #      tags:
+  #        - opendkim
+  #
+  #    - name: update opendkim TrustedHosts
+  #      template: dest=/etc/opendkim/TrustedHosts src=templates/opendkim-TrustedHosts
+  #      notify:
+  #        - restart opendkim
+  #      tags:
+  #        - opendkim
+  #
+  #    - name: verify opendkim is enabled
+  #      service: name=opendkim enabled=true
+  #      tags:
+  #        - opendkim
 
 
   handlers:
@@ -198,3 +209,6 @@
 
     - name: restart spamassassin
       service: name=spamassassin state=restarted
+
+    - name: run postmap
+      command: /usr/sbin/postmap /etc/postfix/virtual
