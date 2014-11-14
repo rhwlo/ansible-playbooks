@@ -109,7 +109,7 @@
         - spamassassin
 
     - name: create cronjob for spamassassin
-      cron: name=sa-update hour="10" job="sa-update && service spamassassin reload"
+      cron: name=sa-update hour="10" job="/usr/bin/sa-update && /sbin/service spamassassin reload"
       tags:
         - spamassassin
 
