@@ -159,7 +159,11 @@ inet_protocols = all
 #
 # See also below, section "REJECTING MAIL FOR UNKNOWN LOCAL USERS".
 #
+{% if is_primary_mailserver %}
 mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain
+{% else %}
+mydestination = $myhostname, localhost.$mydomain, localhost
+{% endif %}
 #mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain,
 #	mail.$mydomain, www.$mydomain, ftp.$mydomain
 
@@ -290,7 +294,7 @@ unknown_local_recipient_reject_code = 550
 # list this system as their primary or backup MX host. See the
 # permit_mx_backup restriction description in postconf(5).
 #
-relay_domains = rhwlo.com fearchar.net
+relay_domains = {{ " ".join(default_users.keys()) }}
 
 # INTERNET OR INTRANET
 
@@ -354,7 +358,9 @@ relay_domains = rhwlo.com fearchar.net
 #
 # The VIRTUAL_README document gives information about the many forms
 # of domain hosting that Postfix supports.
+{% if is_primary_mailserver %}
 virtual_alias_maps = hash:/etc/postfix/virtual
+{% endif %}
 
 # "USER HAS MOVED" BOUNCE MESSAGES
 #
@@ -687,8 +693,15 @@ smtpd_sasl_type = dovecot
 smtpd_sasl_path = /var/spool/postfix/private/auth
 smtpd_sasl_auth_enable = yes
 smtpd_sasl_security_options = noanonymous
+{% if is_primary_mailserver %}
 smtpd_recipient_restrictions = permit_sasl_authenticated,reject_unauth_destination,permit_mynetworks,check_relay_domains
+{% else %}
+smtpd_recipient_restrictions = permit_sasl_authenticated,reject_unauth_destination,permit_mynetworks,check_relay_domains,permit_mx_backup
+{% endif %}
 smtpd_delay_reject = yes
 broken_sasl_auth_clients = yes
 
 smtp_generic_maps = hash:/etc/postfix/generic
+{% if not is_primary_mailserver %}
+transport_maps = hash:/etc/postfix/transport
+{% endif %}
