@@ -1,5 +1,5 @@
 ---
-- hosts: all
+- hosts: mailservers
   tasks:
     # dovecot
     - name: install dovecot
@@ -25,6 +25,20 @@
 
     - name: dovecot mail location config
       copy: dest=/etc/dovecot/conf.d/10-mail.conf src=files/dovecot-10-mail.conf
+      notify:
+        - restart dovecot
+      tags:
+        - dovecot
+
+    - name: dovecot logging config
+      copy: dest=/etc/dovecot/conf.d/10-logging.conf src=files/dovecot-10-logging.conf
+      notify:
+        - restart dovecot
+      tags:
+        - dovecot
+
+    - name: dovecot ssl config
+      copy: dest=/etc/dovecot/conf.d/10-ssl.conf src=files/dovecot-10-ssl.conf
       notify:
         - restart dovecot
       tags:
@@ -71,12 +85,19 @@
       tags:
         - postfix
 
-    - name: copy postfix virtual.db
+    - name: copy postfix virtual
       template: dest=/etc/postfix/virtual src=templates/postfix-virtual.j2
       notify:
+        - run virtual postmap
         - restart postfix
-        - run postmap
         - generate aliases
+      tags:
+        - postfix
+
+    - name: copy postfix generics
+      template: dest=/etc/postfix/generic src=templates/postfix-generic.j2
+      notify:
+        - run generic postmap
       tags:
         - postfix
 
@@ -91,6 +112,12 @@
       service: name=postfix enabled=true
       tags:
         - postfix
+
+    # procmail
+    - name: verify that procmail is installed
+      yum: name=procmail state=present
+      tags:
+        - procmail
 
     # spamassassin
     - name: install spamassassin
@@ -109,7 +136,7 @@
         - spamassassin
 
     - name: create cronjob for spamassassin
-      cron: name=sa-update hour="10" job="/usr/bin/sa-update && /sbin/service spamassassin reload"
+      cron: name=sa-update hour="10" job="/usr/bin/sa-update"
       tags:
         - spamassassin
 
@@ -128,67 +155,67 @@
       tags:
         - spamassassin
 
-    # DKIM
-    - name: install opendkim
-      yum: name=opendkim state=present
-      notify:
-        - restart opendkim
-      tags:
-        - opendkim
+          #    # DKIM
+          #    - name: install opendkim
+          #      yum: name=opendkim state=present
+          #      notify:
+          #        - restart opendkim
+          #      tags:
+          #        - opendkim
+          #
+          #    - name: copy opendkim config
+          #      copy: dest=/etc/opendkim.conf src=files/opendkim.conf
+          #      notify:
+          #        - restart opendkim
+          #      tags:
+          #        - opendkim
+          #
+          #    - name: make opendkim keys directory
+          #      file: path=/etc/opendkim/keys/{{domain}} state=directory owner=opendkim group=opendkim
+          #      tags:
+          #        - opendkim
+          #
+          #    - name: generate public/private dkim keys
+          #      command: opendkim-genkey -D /etc/opendkim/keys/{{domain}}/ -d {{domain}} -s default
+          #      args:
+          #        creates: /etc/opendkim/keys/{{domain}}/default.private
+          #      notify:
+          #        - restart opendkim
+          #      tags:
+          #        - opendkim
+          #
+          #    - name: symlink default -> default.private
+          #      file: path=/etc/opendkim/keys/{{domain}}/default src=/etc/opendkim/keys/{{domain}}/default.private state=link
+          #      tags:
+          #        - opendkim
+          #
+          #    - name: verify ownership of opendkim keys directory
+          #      file: path=/etc/opendkim/keys/{{domain}} recurse=yes owner=opendkim group=opendkim
+          #      tags:
+          #        - opendkim
 
-    - name: copy opendkim config
-      copy: dest=/etc/opendkim.conf src=files/opendkim.conf
-      notify:
-        - restart opendkim
-      tags:
-        - opendkim
+          #    - name: verify iptables rules are in place
+          #      file: path=/etc/sysconfig/iptables src=files/iptables
+          #      notify:
+          #        - restart iptables
+          #      tags:
+          #        - firewall
 
-    - name: make opendkim keys directory
-      file: path=/etc/opendkim/keys/{{domain}} state=directory owner=opendkim group=opendkim
-      tags:
-        - opendkim
-
-    - name: generate public/private dkim keys
-      command: opendkim-genkey -D /etc/opendkim/keys/{{domain}}/ -d {{domain}} -s default
-      args:
-        creates: /etc/opendkim/keys/{{domain}}/default.private
-      notify:
-        - restart opendkim
-      tags:
-        - opendkim
-
-    - name: symlink default -> default.private
-      file: path=/etc/opendkim/keys/{{domain}}/default src=/etc/opendkim/keys/{{domain}}/default.private state=link
-      tags:
-        - opendkim
-
-    - name: verify ownership of opendkim keys directory
-      file: path=/etc/opendkim/keys/{{domain}} recurse=yes owner=opendkim group=opendkim
-      tags:
-        - opendkim
-
-    - name: verify iptables rules are in place
-      file: path=/etc/sysconfig/iptables src=files/iptables
-      notify:
-        - restart iptables
-      tags:
-        - firewall
-
-    - name: verify SSL cert is in place
-      file: path=/etc/ssl/certs/server.crt src=files/server.crt
-      notify:
-        - restart dovecot
-        - restart postfix
-      tags:
-        - certs
-
-    - name: verify SSL key is in place
-      file: path=/etc/ssl/certs/server.key src=files/server.key
-      notify:
-        - restart dovecot
-        - restart postfix
-      tags:
-        - certs
+          #    - name: verify SSL cert is in place
+          #      file: path=/etc/ssl/certs/server.crt src=files/server.crt
+          #      notify:
+          #        - restart dovecot
+          #        - restart postfix
+          #      tags:
+          #        - certs
+          #
+          #    - name: verify SSL key is in place
+          #      file: path=/etc/ssl/certs/server.key src=files/server.key
+          #      notify:
+          #        - restart dovecot
+          #        - restart postfix
+          #      tags:
+          #        - certs
 
   #    - name: verify opendkim KeyTable
   #      template: dest=/etc/opendkim/KeyTable src=templates/opendkim-KeyTable
@@ -236,5 +263,8 @@
     - name: restart spamassassin
       service: name=spamassassin state=restarted
 
-    - name: run postmap
+    - name: run virtual postmap
       command: /usr/sbin/postmap /etc/postfix/virtual
+
+    - name: run generic postmap
+      command: /usr/sbin/postmap /etc/postfix/generic

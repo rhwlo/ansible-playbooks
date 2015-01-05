@@ -72,7 +72,7 @@ mail_owner = postfix
 # from gethostname(). $myhostname is used as a default value for many
 # other configuration parameters.
 #
-myhostname = {{ansible_hostname}}
+myhostname = {{ansible_hostname}}.{{domain}}
 
 # The mydomain parameter specifies the local internet domain name.
 # The default is to use $myhostname minus the first component.
@@ -202,7 +202,7 @@ mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain
 # In the left-hand side, specify a bare username, an @domain.tld
 # wild-card, or specify a user@domain.tld address.
 #
-#local_recipient_maps = unix:passwd.byname $alias_maps
+local_recipient_maps = unix:passwd.byname $alias_maps
 #local_recipient_maps = proxy:unix:passwd.byname $alias_maps
 #local_recipient_maps =
 
@@ -290,7 +290,7 @@ unknown_local_recipient_reject_code = 550
 # list this system as their primary or backup MX host. See the
 # permit_mx_backup restriction description in postconf(5).
 #
-relay_domains =
+relay_domains = rhwlo.com fearchar.net
 
 # INTERNET OR INTRANET
 
@@ -690,3 +690,5 @@ smtpd_sasl_security_options = noanonymous
 smtpd_recipient_restrictions = permit_sasl_authenticated,reject_unauth_destination,permit_mynetworks,check_relay_domains
 smtpd_delay_reject = yes
 broken_sasl_auth_clients = yes
+
+smtp_generic_maps = hash:/etc/postfix/generic

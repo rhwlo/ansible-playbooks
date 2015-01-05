@@ -1,1 +1,3 @@
-@{{domain}}     {{default_user}}
+{% for domain, user in default_users.items() %}
+@{{domain}}			{{user}}@{{domain}}
+{% endfor %}
