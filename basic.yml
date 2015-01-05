@@ -1,0 +1,11 @@
+---
+- hosts: all
+  tasks:
+    - name: change hostname
+      hostname: name={{inventory_hostname}}
+      tags:
+        - hostname
+    - name: disable cloud hostname sync
+      lineinfile: dest=/etc/cloud/cloud.cfg regexp="^ - (set|update)_hostname$"
+      tags:
+        - hostname
