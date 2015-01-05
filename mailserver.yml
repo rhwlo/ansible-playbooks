@@ -93,6 +93,7 @@
         - generate aliases
       tags:
         - postfix
+      when: is_primary_mailserver
 
     - name: copy postfix generics
       template: dest=/etc/postfix/generic src=templates/postfix-generic.j2
@@ -100,6 +101,15 @@
         - run generic postmap
       tags:
         - postfix
+      when: is_primary_mailserver
+
+    - name: copy postfix transport config
+      template: dest=/etc/postfix/transport src=templates/postfix-transport.j2
+      notify:
+        - run transport postmap
+      tags:
+        - postfix
+      when: not is_primary_mailserver
 
     - name: set up aliases
       copy: dest=/etc/aliases src=files/mail-aliases
@@ -107,6 +117,7 @@
         - generate aliases
       tags:
         - postfix
+      when: is_primary_mailserver
 
     - name: verify that postfix is enabled
       service: name=postfix enabled=true
@@ -268,3 +279,6 @@
 
     - name: run generic postmap
       command: /usr/sbin/postmap /etc/postfix/generic
+
+    - name: run transport postmap
+      command: /usr/sbin/postmap /etc/postfix/transport
