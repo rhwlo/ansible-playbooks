@@ -1,0 +1,8 @@
+is_primary_mailserver: false
+primary_mailserver: dummy_host.example.com
+domain: example.com
+default_users:
+    "example.com": linda
+    "example.info": linda
+canonical_addresses:
+    linda: "linda@example.info"

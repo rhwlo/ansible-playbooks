@@ -166,94 +166,28 @@
       tags:
         - spamassassin
 
-          #    # DKIM
-          #    - name: install opendkim
-          #      yum: name=opendkim state=present
-          #      notify:
-          #        - restart opendkim
-          #      tags:
-          #        - opendkim
-          #
-          #    - name: copy opendkim config
-          #      copy: dest=/etc/opendkim.conf src=files/opendkim.conf
-          #      notify:
-          #        - restart opendkim
-          #      tags:
-          #        - opendkim
-          #
-          #    - name: make opendkim keys directory
-          #      file: path=/etc/opendkim/keys/{{domain}} state=directory owner=opendkim group=opendkim
-          #      tags:
-          #        - opendkim
-          #
-          #    - name: generate public/private dkim keys
-          #      command: opendkim-genkey -D /etc/opendkim/keys/{{domain}}/ -d {{domain}} -s default
-          #      args:
-          #        creates: /etc/opendkim/keys/{{domain}}/default.private
-          #      notify:
-          #        - restart opendkim
-          #      tags:
-          #        - opendkim
-          #
-          #    - name: symlink default -> default.private
-          #      file: path=/etc/opendkim/keys/{{domain}}/default src=/etc/opendkim/keys/{{domain}}/default.private state=link
-          #      tags:
-          #        - opendkim
-          #
-          #    - name: verify ownership of opendkim keys directory
-          #      file: path=/etc/opendkim/keys/{{domain}} recurse=yes owner=opendkim group=opendkim
-          #      tags:
-          #        - opendkim
+    - name: verify iptables rules are in place
+      file: path=/etc/sysconfig/iptables src=files/iptables
+      notify:
+        - restart iptables
+      tags:
+        - firewall
 
-          #    - name: verify iptables rules are in place
-          #      file: path=/etc/sysconfig/iptables src=files/iptables
-          #      notify:
-          #        - restart iptables
-          #      tags:
-          #        - firewall
+    - name: verify SSL cert is in place
+      file: path=/etc/ssl/certs/server.crt src=files/mailserver.crt
+      notify:
+        - restart dovecot
+        - restart postfix
+      tags:
+        - certs
 
-          #    - name: verify SSL cert is in place
-          #      file: path=/etc/ssl/certs/server.crt src=files/server.crt
-          #      notify:
-          #        - restart dovecot
-          #        - restart postfix
-          #      tags:
-          #        - certs
-          #
-          #    - name: verify SSL key is in place
-          #      file: path=/etc/ssl/certs/server.key src=files/server.key
-          #      notify:
-          #        - restart dovecot
-          #        - restart postfix
-          #      tags:
-          #        - certs
-
-  #    - name: verify opendkim KeyTable
-  #      template: dest=/etc/opendkim/KeyTable src=templates/opendkim-KeyTable
-  #      notify:
-  #        - restart opendkim
-  #      tags:
-  #        - opendkim
-  #
-  #    - name: verify opendkim SigningTable
-  #      template: dest=/etc/opendkim/SigningTable src=templates/opendkim-SigningTable
-  #      notify:
-  #        - restart opendkim
-  #      tags:
-  #        - opendkim
-  #
-  #    - name: update opendkim TrustedHosts
-  #      template: dest=/etc/opendkim/TrustedHosts src=templates/opendkim-TrustedHosts
-  #      notify:
-  #        - restart opendkim
-  #      tags:
-  #        - opendkim
-  #
-  #    - name: verify opendkim is enabled
-  #      service: name=opendkim enabled=true
-  #      tags:
-  #        - opendkim
-
+    - name: verify SSL key is in place
+      file: path=/etc/ssl/certs/server.key src=files/mailserver.key
+      notify:
+        - restart dovecot
+        - restart postfix
+      tags:
+        - certs
 
   handlers:
     - name: generate aliases
