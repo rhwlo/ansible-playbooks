@@ -1,3 +1,4 @@
+root_mail_goes_to: linda
 is_primary_mailserver: false
 primary_mailserver: dummy_host.example.com
 domain: example.com

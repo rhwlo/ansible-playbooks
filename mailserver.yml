@@ -112,7 +112,7 @@
       when: not is_primary_mailserver
 
     - name: set up aliases
-      copy: dest=/etc/aliases src=files/mail-aliases
+      template: dest=/etc/aliases src=templates/mail-aliases.j2
       notify:
         - generate aliases
       tags:
