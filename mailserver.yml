@@ -9,6 +9,13 @@
       tags:
         - dovecot
 
+    - name: install dovecot-pigeonhole
+      yum: name=dovecot-pigeonhole state=present
+      notify:
+        - restart dovecot
+      tags:
+        - dovecot
+
     - name: dovecot main config
       copy: dest=/etc/dovecot/dovecot.conf src=files/dovecot.conf
       notify:
@@ -37,6 +44,13 @@
       tags:
         - dovecot
 
+    - name: dovecot lda config
+      copy: dest=/etc/dovecot/conf.d/15-lda.conf src=files/dovecot-15-lda.conf
+      notify:
+        - restart dovecot
+      tags:
+        - dovecot
+
     - name: dovecot ssl config
       copy: dest=/etc/dovecot/conf.d/10-ssl.conf src=files/dovecot-10-ssl.conf
       notify:
@@ -46,6 +60,13 @@
 
     - name: dovecot smtp auth
       copy: dest=/etc/dovecot/conf.d/10-master.conf src=files/dovecot-10-master.conf
+      notify:
+        - restart dovecot
+      tags:
+        - dovecot
+
+    - name: dovecot sieve config
+      copy: dest=/etc/dovecot/conf.d/20-managesieve.conf src=files/dovecot-20-managesieve.conf
       notify:
         - restart dovecot
       tags:

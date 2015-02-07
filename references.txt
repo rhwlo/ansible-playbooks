@@ -4,3 +4,4 @@
 - https://www.rosehosting.com/blog/how-to-install-and-integrate-opendkim-with-postfix-on-a-centos-6-vps/
 - http://inetshoot.blogspot.com/2008/05/configuring-postfix-to-act-as-backup-mx.html
 - http://www.cyberciti.biz/tips/howto-postfix-masquerade-change-email-mail-address.html
+- http://www.wedebugyou.com/2014/02/how-to-install-sieve-for-dovecot-on-centos-6/
