@@ -29,7 +29,10 @@ A few notes on configuration:
 ```
 require "fileinto";
 
-if header :contains "X-Spam-Status" "YES" {
+if allof (
+   header :contains "X-Spam-Status" "YES",
+   not header :contains "X-Spam-Status" "No" )
+{
         fileinto "spam";
 }
 ```
